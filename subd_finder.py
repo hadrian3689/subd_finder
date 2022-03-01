@@ -13,7 +13,7 @@ class Sub_Domain_Finder():
 
         self.logo()
         self.url = self.check_url()
-        self.options_and_wordlistset()
+        self.set_processes()
 
     def logo(self):
         display = "\n"
@@ -29,71 +29,32 @@ class Sub_Domain_Finder():
             fixed_url = self.target + "/"
             return fixed_url
 
-    def options_and_wordlistset(self):
+    def set_processes(self):
         print("Finding Sub_Domains:")
+
+        if args.b:
+            print("Blacklisted Status Code: " + self.blacklist)
+
+        if args.o:
+            file_write = open(self.output_file,"w")
+            file_write.close()
 
         original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
         pool = Pool(processes=int(self.threads))
         signal.signal(signal.SIGINT, original_sigint_handler)
 
-        lines = [] 
+        lines = []
         with open(self.wordlist,'r') as wordlist_file:
             for each_word in wordlist_file:
                 lines.append(each_word.rstrip())
 
-        if args.o:
-
-            if args.b:
-                    print("Blacklisted Status Code: " + self.blacklist)
-                    file_write = open(self.output_file,"w")
-                    file_write.close()
-                    try:
-                        start = pool.map_async(self.subd_finder_with_file_with_blacklist,lines)
-                    except KeyboardInterrupt:
-                        print("Bye Bye!")
-                        pool.terminate()
-                        exit()
-                    else:
-                        pool.close()
-                    pool.join()  
-
-            else:
-                file_write = open(self.output_file,"w")
-                file_write.close()
-                try:
-                    start = pool.map_async(self.subd_finder_with_file_no_blacklist,lines)
-                except KeyboardInterrupt:
-                    print("Bye Bye!")
-                    pool.terminate()
-                    exit()
-                else:
-                    pool.close()
-                pool.join() 
-
+        try:
+            start = pool.map_async(self.subd_finder,lines)
+        except KeyboardInterrupt:
+            pool.terminate()
         else:
-
-            if args.b:
-                print("Blacklisted Status Code: " + self.blacklist)
-                try:
-                    start = pool.map_async(self.subd_finder_no_outfile_with_blacklist,lines)
-                except KeyboardInterrupt:
-                    print("Bye Bye!")
-                    pool.terminate()
-                    exit()
-                else:
-                    pool.close()
-                pool.join() 
-
-            else:
-                try:
-                    start = pool.map_async(self.subd_finder_no_outfile_no_blacklist,lines)
-                except KeyboardInterrupt:
-                    print("Bye Bye!")
-                    pool.terminate()
-                    exit()
-                else:
-                    pool.close()
-                pool.join()
+            pool.close()
+        pool.join()
         
         print("Done!")
 
@@ -109,45 +70,25 @@ class Sub_Domain_Finder():
 
             return sub_domain, https_url
         else:
-            url = self.url[7:length_url] 
+            url = self.url[7:length_url]
             url = url[:-1]
             sub_domain = sub_domain + "." + url
 
             return sub_domain, ssl_check
 
-    def subd_finder_no_outfile_no_blacklist(self,each_word):
-        requests.packages.urllib3.disable_warnings()
-
-        sub_domain, http_print = self.ssl_check(each_word)
-
-        header_check = {
-            "Host" : "CQKXnw7oGYDjn8asozo5dQ==",
-            "Connection":"close"
-        }   
-
-        check_url_req = requests.get(self.url, headers=header_check, verify=False, allow_redirects=False)
-        length_url_check = len(check_url_req.text)
-
-        header_found = {
-                    "Host" : sub_domain,
-                    "Connection":"close"
-        }
-
-        found_url_req = requests.get(self.url, headers=header_found, verify=False, allow_redirects=False)
-        length_found_url = len(found_url_req.text)
-
-        if length_found_url != length_url_check:
-            print("Found: " + http_print + "//" + sub_domain,found_url_req.status_code)
-
-    def subd_finder_no_outfile_with_blacklist(self,each_word):
+    def subd_finder(self,each_word):
         requests.packages.urllib3.disable_warnings() 
 
         sub_domain, http_print = self.ssl_check(each_word)
 
+        if args.b:
+            self.blacklist = self.blacklist
+        else:
+            self.blacklist = 404        
                 
         header_check = {
             "Host" : "CQKXnw7oGYDjn8asozo5dQ==",
-            "Connection":"close" 
+            "Connection":"close"
         }   
 
         check_url_req = requests.get(self.url, headers=header_check, verify=False, allow_redirects=False)
@@ -161,76 +102,22 @@ class Sub_Domain_Finder():
         found_url_req = requests.get(self.url, headers=header_found, verify=False, allow_redirects=False)
         length_found_url = len(found_url_req.text)
 
-        if length_found_url != length_url_check and found_url_req.status_code != int(self.blacklist):
-            print("Found: " + http_print + "//" + sub_domain,found_url_req.status_code)
-
-    def subd_finder_with_file_no_blacklist(self,each_word):
-        requests.packages.urllib3.disable_warnings()
-
-        sub_domain, http_print = self.ssl_check(each_word)
-
-        header_check = {
-            "Host" : "CQKXnw7oGYDjn8asozo5dQ==",
-            "Connection":"close" 
-        }   
-
-        check_url_req = requests.get(self.url, headers=header_check, verify=False, allow_redirects=False)
-        length_url_check = len(check_url_req.text)
-
-        header_found = {
-            "Host" : sub_domain,
-            "Connection":"close"
-        }
-
-        found_url_req = requests.get(self.url, headers=header_found, verify=False, allow_redirects=False)
-        length_found_url = len(found_url_req.text)
-
-        if length_found_url != length_url_check:
-            print("Found: " + http_print + "//" + sub_domain,found_url_req.status_code) 
-                        
-            out_file = open(self.output_file,'a')
-            out_file.write("Found: ")
-            out_file.write(http_print)
-            out_file.write("//")
-            out_file.write(sub_domain)
-            out_file.write(" ")
-            out_file.write(str(found_url_req.status_code))
-            out_file.write("\n")
-            out_file.close()
-
-    def subd_finder_with_file_with_blacklist(self,each_word):
-        requests.packages.urllib3.disable_warnings()
-
-        sub_domain, http_print = self.ssl_check(each_word)
-
-        header_check = {
-            "Host" : "CQKXnw7oGYDjn8asozo5dQ==",
-            "Connection":"close" 
-        }   
-
-        check_url_req = requests.get(self.url, headers=header_check, verify=False, allow_redirects=False)
-        length_url_check = len(check_url_req.text)
-
-        header_found = {
-            "Host" : sub_domain,
-            "Connection":"close"
-        }
-
-        found_url_req = requests.get(self.url, headers=header_found, verify=False, allow_redirects=False)
-        length_found_url = len(found_url_req.text)
-
-        if length_found_url != length_url_check and found_url_req.status_code != int(self.blacklist):
-            print("Found: " + http_print + "//" + sub_domain,found_url_req.status_code) 
+        if args.o:
+            if length_found_url != length_url_check and found_url_req.status_code != int(self.blacklist):
+                print("Found: " + http_print + "//" + sub_domain,found_url_req.status_code) 
                             
-            out_file = open(self.output_file,'a')
-            out_file.write("Found: ")
-            out_file.write(http_print)
-            out_file.write("//")
-            out_file.write(sub_domain)
-            out_file.write(" ")
-            out_file.write(str(found_url_req.status_code))
-            out_file.write("\n")
-            out_file.close()
+                out_file = open(self.output_file,'a')
+                out_file.write("Found: ")
+                out_file.write(http_print)
+                out_file.write("//")
+                out_file.write(sub_domain)
+                out_file.write(" ")
+                out_file.write(str(found_url_req.status_code))
+                out_file.write("\n")
+                out_file.close()
+
+        elif length_found_url != length_url_check and found_url_req.status_code != int(self.blacklist):
+            print("Found: " + http_print + "//" + sub_domain,found_url_req.status_code)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Brute Force Sub Domains')
