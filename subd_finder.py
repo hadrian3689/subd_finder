@@ -87,7 +87,7 @@ class Sub_Domain_Finder():
             self.blacklist = 404        
                 
         header_check = {
-            "Host" : "CQKXnw7oGYDjn8asozo5dQ==",
+            "Host" : "CQKXnw7oGYDjn8asozo5dQ",
             "Connection":"close"
         }   
 
