@@ -123,7 +123,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Brute Force Sub Domains')
 
     parser.add_argument('-u', metavar='<Target URL>', help='target/host URL, E.G: -u http://findme.blah/', required=True)
-    parser.add_argument('-w', metavar='<wordlist file>',default='list.txt',help="Example: -w list.txt", required=True)
+    parser.add_argument('-w', metavar='<wordlist file>',help="Example: -w list.txt", required=True)
     parser.add_argument('-o', metavar='<output file>',help="Example: -o output.txt", required=False)
     parser.add_argument('-b', metavar='<blacklist status code>',help="Example: -b 301 ", required=False)
     parser.add_argument('-t', metavar='<Threads>',default="10",help="Example: -t 100", required=False)
