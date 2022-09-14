@@ -4,12 +4,14 @@ import argparse
 import signal
 
 class Sub_Domain_Finder():
-    def __init__(self,target,wordlist,output_file,blacklist,threads):
+    def __init__(self,target,wordlist,output_file,blacklist,threads,user_agent,proxy):
         self.target = target
         self.wordlist = wordlist
         self.output_file = output_file
         self.blacklist = blacklist
         self.threads = threads
+        self.user_agent = user_agent
+        self.proxy = proxy
 
         self.logo()
         self.url = self.check_url()
@@ -76,30 +78,44 @@ class Sub_Domain_Finder():
 
             return sub_domain, ssl_check
 
-    def subd_finder(self,each_word):
-        requests.packages.urllib3.disable_warnings() 
-
-        sub_domain, http_print = self.ssl_check(each_word)
-
-        if args.b:
-            self.blacklist = self.blacklist
-        else:
-            self.blacklist = 404        
-                
+    def create_headers(self,sub_domain):
         header_check = {
             "Host" : "CQKXnw7oGYDjn8asozo5dQ",
             "Connection":"close"
-        }   
-
-        check_url_req = requests.get(self.url, headers=header_check, verify=False, allow_redirects=False)
-        length_url_check = len(check_url_req.text)
+        }
 
         header_found = {
             "Host" : sub_domain,
             "Connection":"close"
         }
+        proxy_set = {}
 
-        found_url_req = requests.get(self.url, headers=header_found, verify=False, allow_redirects=False)
+        if args.a:
+            header_check["User-Agent"] = self.user_agent
+            header_found["User-Agent"] = self.user_agent
+
+        if args.p:
+            proxy_set = {
+                "http": "http://" + self.proxy
+            }  
+
+        return header_check, header_found, proxy_set
+
+    def subd_finder(self,each_word):
+        requests.packages.urllib3.disable_warnings() 
+
+        sub_domain, http_print = self.ssl_check(each_word)
+        header_check, header_found, proxy_set = self.create_headers(sub_domain)
+
+        if args.b:
+            self.blacklist = self.blacklist
+        else:
+            self.blacklist = 404         
+
+        check_url_req = requests.get(self.url, headers=header_check, verify=False, allow_redirects=False,proxies=proxy_set)
+        length_url_check = len(check_url_req.text)
+
+        found_url_req = requests.get(self.url, headers=header_found, verify=False, allow_redirects=False,proxies=proxy_set)
         length_found_url = len(found_url_req.text)
 
         if args.o:
@@ -127,11 +143,13 @@ if __name__ == "__main__":
     parser.add_argument('-o', metavar='<output file>',help="Example: -o output.txt", required=False)
     parser.add_argument('-b', metavar='<blacklist status code>',help="Example: -b 301 ", required=False)
     parser.add_argument('-t', metavar='<Threads>',default="10",help="Example: -t 100", required=False)
+    parser.add_argument('-a', metavar='<User-Agent>',help="Example: -a Linux", required=False)
+    parser.add_argument('-p', metavar='<Proxies>',help="Example: -p 127.0.0.1:8080", required=False)
 
     args = parser.parse_args()  
 
     try:
-        Sub_Domain_Finder(args.u,args.w,args.o,args.b,args.t)
+        Sub_Domain_Finder(args.u,args.w,args.o,args.b,args.t,args.a,args.p)
     except KeyboardInterrupt:
         print("Bye Bye") 
         exit()
