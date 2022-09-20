@@ -1,8 +1,4 @@
-# Project Title
-
-SubDFinder
-
-## Description
+# SubDFinder
 
 A Web SubDomain finder 
 
