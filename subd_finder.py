@@ -4,24 +4,19 @@ import argparse
 import signal
 
 class Sub_Domain_Finder():
-    def __init__(self,target,wordlist,output_file,blacklist,threads,user_agent,proxy):
+    def __init__(self,target,wordlist,output_file,blacklist,threads,header,user_agent,proxy):
         self.target = target
         self.wordlist = wordlist
         self.output_file = output_file
         self.blacklist = blacklist
         self.threads = threads
+        self.header = header
         self.user_agent = user_agent
         self.proxy = proxy
 
-        self.logo()
         self.url = self.check_url()
         self.set_processes()
 
-    def logo(self):
-        display = "\n"
-        display += "█▀ █░█ █▄▄ █▀▄ █▀▀ █ █▄░█ █▀▄ █▀▀ █▀█\n"
-        display += "▄█ █▄█ █▄█ █▄▀ █▀░ █ █░▀█ █▄▀ ██▄ █▀▄\n"
-        print(display)
 
     def check_url(self):
         check = self.target[-1]
@@ -97,7 +92,14 @@ class Sub_Domain_Finder():
         if args.p:
             proxy_set = {
                 "http": "http://" + self.proxy
-            }  
+            }
+
+        if args.H:
+            header_list = self.header.split(': ')
+            list_length = len(header_list) - 1 
+            for each_header in range(0,list_length):
+                header_check[header_list[each_header]] = header_list[each_header + 1]
+                header_found[header_list[each_header]] = header_list[each_header + 1]
 
         return header_check, header_found, proxy_set
 
@@ -143,13 +145,14 @@ if __name__ == "__main__":
     parser.add_argument('-o', metavar='<output file>',help="Example: -o output.txt", required=False)
     parser.add_argument('-b', metavar='<blacklist status code>',help="Example: -b 301 ", required=False)
     parser.add_argument('-t', metavar='<Threads>',default="10",help="Example: -t 100", required=False)
+    parser.add_argument('-H', metavar='<Header>',help="Example -H 'Parameter: Value", required=False)
     parser.add_argument('-a', metavar='<User-Agent>',help="Example: -a Linux", required=False)
     parser.add_argument('-p', metavar='<Proxies>',help="Example: -p 127.0.0.1:8080", required=False)
 
     args = parser.parse_args()  
 
     try:
-        Sub_Domain_Finder(args.u,args.w,args.o,args.b,args.t,args.a,args.p)
+        Sub_Domain_Finder(args.u,args.w,args.o,args.b,args.t,args.H,args.a,args.p)
     except KeyboardInterrupt:
         print("Bye Bye") 
         exit()
